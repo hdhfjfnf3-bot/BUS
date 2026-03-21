@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CATEGORIES } from "@/lib/gameTypes";
+import LoveFooter from "@/components/LoveFooter";
 
 const Starfield = () => {
   const [stars, setStars] = useState<{ id: number; x: number; y: number; size: number; duration: number }[]>([]);
@@ -246,6 +247,7 @@ export default function HomeScreen({ onCreateRoom, onJoinRoom, isConnecting }: H
           {isConnecting ? 'جاري الإنشاء...' : '🚌 يلا بينا!'}
         </button>
       </div>
+      <LoveFooter />
     </div>
   );
 }

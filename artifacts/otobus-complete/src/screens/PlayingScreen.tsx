@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { RoomState } from "@/lib/gameTypes";
 import { CATEGORY_LABELS } from "@/lib/gameTypes";
+import LoveFooter from "@/components/LoveFooter";
 
 interface PlayingScreenProps {
   room: RoomState;
@@ -170,6 +171,7 @@ export default function PlayingScreen({ room, myPlayerId, localAnswers, onAnswer
             </div>
           )}
         </div>
+        <LoveFooter />
       </div>
     </div>
   );

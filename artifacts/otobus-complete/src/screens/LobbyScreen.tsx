@@ -1,5 +1,6 @@
 import { CATEGORY_LABELS } from "@/lib/gameTypes";
 import type { RoomState } from "@/lib/gameTypes";
+import LoveFooter from "@/components/LoveFooter";
 
 interface LobbyScreenProps {
   room: RoomState;
@@ -117,6 +118,7 @@ export default function LobbyScreen({ room, myPlayerId, onStartGame }: LobbyScre
           </div>
         )}
       </div>
+      <LoveFooter />
     </div>
   );
 }

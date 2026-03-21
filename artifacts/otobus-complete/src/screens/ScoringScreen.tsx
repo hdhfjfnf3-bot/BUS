@@ -1,5 +1,6 @@
 import type { RoomState } from "@/lib/gameTypes";
 import { CATEGORY_LABELS } from "@/lib/gameTypes";
+import LoveFooter from "@/components/LoveFooter";
 
 interface ScoringScreenProps {
   room: RoomState;
@@ -140,6 +141,7 @@ export default function ScoringScreen({ room, myPlayerId, lastRoundScores, answe
           </div>
         )}
       </div>
+      <LoveFooter />
     </div>
   );
 }

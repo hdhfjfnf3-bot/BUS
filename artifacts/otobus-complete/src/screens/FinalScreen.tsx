@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { RoomState } from "@/lib/gameTypes";
+import LoveFooter from "@/components/LoveFooter";
 
 function Confetti() {
   const [particles, setParticles] = useState<Array<{ id: number; x: number; color: string; delay: number; size: number }>>([]);
@@ -159,6 +160,7 @@ export default function FinalScreen({ room, myPlayerId, isHost, onRestart }: Fin
           </div>
         )}
       </div>
+      <LoveFooter />
     </div>
   );
 }
