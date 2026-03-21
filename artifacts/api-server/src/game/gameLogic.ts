@@ -1,3 +1,8 @@
+import { spellCheckDocument } from 'cspell-lib';
+import { readFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 export const ARABIC_LETTERS = [
   'أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش',
   'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'
@@ -150,7 +155,7 @@ function isKeyboardSmash(text: string): boolean {
   return false;
 }
 
-export function isValidArabicWord(word: string, letter: string): boolean {
+export function isValidArabicWordShape(word: string, letter: string): boolean {
   if (!word || word.trim() === '') return false;
   const trimmed = removeDiacritics(word.trim());
   
@@ -178,16 +183,90 @@ export function isValidArabicWord(word: string, letter: string): boolean {
   return true;
 }
 
+// Real-word check (dictionary-based) using cspell.
+// This is intentionally strict to prevent random "letter smashes".
+const realWordCache = new Map<string, boolean>();
+let cspellArabicConfigPromise: Promise<any> | null = null;
+
+async function getCSpellArabicConfig(): Promise<any> {
+  if (cspellArabicConfigPromise) return cspellArabicConfigPromise;
+
+  cspellArabicConfigPromise = (async () => {
+    const dictExtUrl = import.meta.resolve('@cspell/dict-ar/cspell-ext.json');
+    const dictExtPath = fileURLToPath(dictExtUrl);
+    const extJson = JSON.parse(await readFile(dictExtPath, 'utf8')) as any;
+
+    // cspell-ext.json uses a relative path "./ar.trie.gz".
+    // We convert it to an absolute path so spellCheckDocument can load it reliably.
+    extJson.dictionaryDefinitions?.forEach((def: any) => {
+      if (def?.path === './ar.trie.gz') def.path = join(dirname(dictExtPath), 'ar.trie.gz');
+    });
+
+    return extJson;
+  })();
+
+  return cspellArabicConfigPromise;
+}
+
+function normalizeAlefVariantsOnly(text: string): string {
+  // Match dictionary spelling better by collapsing Arabic alef variants to bare alef only.
+  // Do NOT change 'ة' -> 'ه' or 'ى' -> 'ي' here; that can break dictionary matches.
+  return text.replace(/[أإآٱ]/g, 'ا');
+}
+
+async function isRealArabicToken(token: string): Promise<boolean> {
+  const cached = realWordCache.get(token);
+  if (cached !== undefined) return cached;
+
+  const cfg = await getCSpellArabicConfig();
+
+  // Check ONLY this token (not the full phrase) to avoid rejecting real multi-word names.
+  const result = await spellCheckDocument(
+    { uri: 'text', text: token, languageId: 'ar', locale: 'ar' },
+    { generateSuggestions: false, noConfigSearch: true, unknownWords: 'report-all' as any },
+    cfg
+  );
+
+  const ok = (result.issues?.length ?? 0) === 0;
+  realWordCache.set(token, ok);
+  return ok;
+}
+
+export async function isValidArabicWord(word: string, letter: string): Promise<boolean> {
+  // First, keep your existing anti-smash / format rules.
+  if (!isValidArabicWordShape(word, letter)) return false;
+
+  // Then, enforce that the first token is an actual Arabic word from the dictionary.
+  // If cspell fails for any reason, fall back to shape validation so the game doesn't break.
+  try {
+    const trimmed = removeDiacritics(word.trim());
+    const firstToken = trimmed.split(/\s+/)[0] || '';
+    if (!firstToken) return false;
+
+    const tokenNoDiacritics = removeDiacritics(firstToken);
+    const tokenBareAlef = normalizeAlefVariantsOnly(tokenNoDiacritics);
+
+    // Accept if either the original token or "bare alef" variant exists in the dictionary.
+    if (await isRealArabicToken(tokenNoDiacritics)) return true;
+    if (tokenBareAlef !== tokenNoDiacritics) {
+      return await isRealArabicToken(tokenBareAlef);
+    }
+    return false;
+  } catch {
+    return isValidArabicWordShape(word, letter);
+  }
+}
+
 // Check if two answers are considered the same (normalized comparison)
 export function answersAreSame(a: string, b: string): boolean {
   return normalizeForComparison(a) === normalizeForComparison(b);
 }
 
-export function calculateRoundScores(
+export async function calculateRoundScores(
   players: Player[],
   categories: string[],
   letter: string
-): { scores: Record<string, number>; validityMap: Record<string, Record<string, boolean>> } {
+): Promise<{ scores: Record<string, number>; validityMap: Record<string, Record<string, boolean>> }> {
   const scores: Record<string, number> = {};
   const validityMap: Record<string, Record<string, boolean>> = {};
   
@@ -196,27 +275,27 @@ export function calculateRoundScores(
     validityMap[p.id] = {};
   });
 
-  categories.forEach(cat => {
+  for (const cat of categories) {
     const validAnswers: Record<string, string> = {};
     
-    players.forEach(player => {
+    for (const player of players) {
       const answer = player.answers[cat]?.trim() || '';
-      const isValid = isValidArabicWord(answer, letter);
+      const isValid = await isValidArabicWord(answer, letter);
       validityMap[player.id][cat] = isValid;
       if (isValid) {
         validAnswers[player.id] = answer;
       }
-    });
+    }
 
     const validPlayerIds = Object.keys(validAnswers);
-    validPlayerIds.forEach(playerId => {
+    for (const playerId of validPlayerIds) {
       const myAnswer = validAnswers[playerId];
       const othersHaveSame = validPlayerIds.some(
         p => p !== playerId && answersAreSame(validAnswers[p], myAnswer)
       );
       scores[playerId] = (scores[playerId] || 0) + (othersHaveSame ? 5 : 10);
-    });
-  });
+    }
+  }
 
   return { scores, validityMap };
 }

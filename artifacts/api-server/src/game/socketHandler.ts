@@ -81,7 +81,7 @@ export function setupSocketIO(httpServer: HttpServer): SocketIOServer {
       }
     });
 
-    socket.on('otobus_complete', (data: { code: string }, callback) => {
+    socket.on('otobus_complete', async (data: { code: string }, callback) => {
       try {
         const updatedRoom = lockRoom(data.code, socket.id);
         if (!updatedRoom) { callback?.({ success: false }); return; }
@@ -90,11 +90,18 @@ export function setupSocketIO(httpServer: HttpServer): SocketIOServer {
         if (!room) return;
 
         // Calculate scores & validity immediately
-        const { scores, validityMap } = calculateRoundScores(room.players, room.categories, room.currentLetter);
+        const { scores, validityMap } = await calculateRoundScores(room.players, room.categories, room.currentLetter);
 
         // Capture answers snapshot
         const answersSnapshot: Record<string, Record<string, string>> = {};
-        room.players.forEach(p => { answersSnapshot[p.id] = { ...p.answers }; });
+        room.players.forEach(p => {
+          const snapshot = { ...p.answers };
+          for (const cat of room.categories) {
+            const isValidForCat = validityMap[p.id]?.[cat] ?? false;
+            if (!isValidForCat) snapshot[cat] = '';
+          }
+          answersSnapshot[p.id] = snapshot;
+        });
 
         const state = getRoomState(data.code);
         io.to(data.code).emit('game_locked', { ...state, roundScores: scores, answersSnapshot, validityMap });
@@ -108,13 +115,13 @@ export function setupSocketIO(httpServer: HttpServer): SocketIOServer {
       updateAnswer(data.code, socket.id, data.category, data.value);
     });
 
-    socket.on('next_round', (data: { code: string }, callback) => {
+    socket.on('next_round', async (data: { code: string }, callback) => {
       try {
         const room = getRoom(data.code);
         if (!room) { callback?.({ success: false, error: 'الغرفة مش موجودة' }); return; }
         const player = room.players.find(p => p.socketId === socket.id);
         if (!player?.isHost) { callback?.({ success: false, error: 'بس الهوست يقدر يكمل' }); return; }
-        const result = advanceRound(data.code);
+        const result = await advanceRound(data.code);
         if (!result) { callback?.({ success: false }); return; }
         const { isFinal } = result;
         const state = getRoomState(data.code);

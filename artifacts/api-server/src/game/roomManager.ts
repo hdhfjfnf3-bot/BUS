@@ -1,4 +1,12 @@
-import { Room, Player, generateRoomCode, getRandomLetter, clearLetterCache, calculateRoundScores } from './gameLogic.js';
+import {
+  Room,
+  Player,
+  generateRoomCode,
+  getRandomLetter,
+  clearLetterCache,
+  calculateRoundScores,
+  isValidArabicWordShape,
+} from './gameLogic.js';
 
 const rooms = new Map<string, Room>();
 
@@ -141,24 +149,39 @@ export function updateAnswer(
   const player = room.players.find(p => p.socketId === socketId);
   if (!player) return false;
 
-  player.answers[category] = value;
-  return true;
+  const trimmed = value.trim();
+  // Allow clearing the input.
+  if (!trimmed) {
+    player.answers[category] = '';
+    return true;
+  }
+
+  // Only store answers that pass the fast (sync) validation used for scoring.
+  // The real-word (dictionary) validation is applied at scoring time.
+  const isValid = isValidArabicWordShape(value, room.currentLetter);
+  player.answers[category] = isValid ? value : '';
+  return isValid;
 }
 
-export function advanceRound(code: string): {
+export async function advanceRound(code: string): Promise<{
   room: Room;
   scores: Record<string, number>;
   validityMap: Record<string, Record<string, boolean>>;
   isFinal: boolean;
-} | null {
+} | null> {
   const room = rooms.get(code);
   if (!room || room.phase !== 'locked') return null;
 
-  const { scores, validityMap } = calculateRoundScores(room.players, room.categories, room.currentLetter);
+  const { scores, validityMap } = await calculateRoundScores(room.players, room.categories, room.currentLetter);
 
   const answersSnapshot: Record<string, Record<string, string>> = {};
   room.players.forEach(p => {
-    answersSnapshot[p.id] = { ...p.answers };
+    const snapshot = { ...p.answers };
+    for (const cat of room.categories) {
+      const isValidForCat = validityMap[p.id]?.[cat] ?? false;
+      if (!isValidForCat) snapshot[cat] = '';
+    }
+    answersSnapshot[p.id] = snapshot;
   });
 
   room.roundResults.push({

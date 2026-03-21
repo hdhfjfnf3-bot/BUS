@@ -5,7 +5,7 @@ export default function LoveFooter() {
         className="text-sm font-medium"
         style={{ color: 'rgba(255,255,255,0.45)', direction: 'rtl' }}
       >
-        صنعت من كل حب لـ بنتييي
+        صنع بكل حب
       </span>
       <MessengerHeart />
     </div>

@@ -17,6 +17,21 @@ export default function PlayingScreen({ room, myPlayerId, localAnswers, onAnswer
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedRoundRef = useRef(room.currentRound);
 
+  const ALEF_VARIANTS = ['أ', 'إ', 'ا', 'آ', 'ٱ'] as const;
+  const removeDiacritics = (text: string) => text.replace(/[\u064B-\u065F\u0670]/g, '');
+
+  const startsWithLetterNormalized = (word: string, letter: string): boolean => {
+    if (!word || word.trim() === '') return false;
+    const normalized = removeDiacritics(word.trim());
+    const firstChar = normalized[0];
+
+    if ((ALEF_VARIANTS as readonly string[]).includes(letter)) {
+      return (ALEF_VARIANTS as readonly string[]).includes(firstChar);
+    }
+
+    return firstChar === letter;
+  };
+
   useEffect(() => {
     if (room.currentRound !== startedRoundRef.current) {
       startedRoundRef.current = room.currentRound;
@@ -105,7 +120,7 @@ export default function PlayingScreen({ room, myPlayerId, localAnswers, onAnswer
           <div className="space-y-4">
             {room.categories.map((catId, idx) => {
               const val = localAnswers[catId] || '';
-              const isValidStart = val.trim().startsWith(room.currentLetter);
+              const isValidStart = startsWithLetterNormalized(val, room.currentLetter);
               const highlight = val.length > 0 && isValidStart && !isLocked;
               
               return (
