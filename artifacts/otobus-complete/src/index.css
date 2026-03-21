@@ -1,0 +1,276 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-gold: hsl(var(--gold));
+  --color-gold-foreground: hsl(var(--gold-foreground));
+
+  --font-sans: var(--app-font-sans);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --background: 220 20% 10%;
+  --foreground: 210 40% 95%;
+
+  --card: 220 18% 13%;
+  --card-foreground: 210 40% 95%;
+
+  --popover: 220 18% 13%;
+  --popover-foreground: 210 40% 95%;
+
+  --primary: 45 95% 55%;
+  --primary-foreground: 220 20% 8%;
+
+  --secondary: 220 15% 20%;
+  --secondary-foreground: 210 40% 90%;
+
+  --muted: 220 15% 18%;
+  --muted-foreground: 215 20% 55%;
+
+  --accent: 260 60% 55%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 75% 55%;
+  --destructive-foreground: 0 0% 100%;
+
+  --gold: 45 95% 55%;
+  --gold-foreground: 220 20% 8%;
+
+  --border: 220 15% 22%;
+  --input: 220 15% 22%;
+  --ring: 45 95% 55%;
+
+  --app-font-sans: 'Cairo', 'Segoe UI', system-ui, sans-serif;
+  --radius: 0.75rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    direction: rtl;
+    font-family: 'Cairo', 'Segoe UI', system-ui, sans-serif;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.3), 0 0 40px rgba(251, 191, 36, 0.1); }
+  50% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.6), 0 0 60px rgba(251, 191, 36, 0.2); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes spin-letter {
+  0% { transform: rotateY(0deg); }
+  100% { transform: rotateY(360deg); }
+}
+
+@keyframes count-down {
+  0% { transform: scale(1.5); opacity: 0; }
+  20% { transform: scale(1); opacity: 1; }
+  80% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.5); opacity: 0; }
+}
+
+.shimmer-btn {
+  background: linear-gradient(
+    90deg,
+    hsl(45, 95%, 45%) 0%,
+    hsl(45, 95%, 65%) 50%,
+    hsl(45, 95%, 45%) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite, pulse-glow 2s ease-in-out infinite;
+}
+
+.letter-display {
+  animation: float 3s ease-in-out infinite;
+}
+
+.new-letter {
+  animation: spin-letter 0.6s ease-out;
+}
+
+.game-card {
+  background: linear-gradient(135deg, hsl(220, 18%, 14%) 0%, hsl(220, 20%, 11%) 100%);
+  border: 1px solid hsl(220, 15%, 25%);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.player-card {
+  background: linear-gradient(135deg, hsl(220, 18%, 16%) 0%, hsl(220, 18%, 13%) 100%);
+  border: 1px solid hsl(220, 15%, 25%);
+  transition: all 0.2s ease;
+}
+
+.player-card:hover {
+  border-color: hsl(45, 95%, 55%, 0.4);
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.08);
+}
+
+.player-card.locked {
+  border-color: hsl(0, 75%, 55%, 0.4);
+  background: linear-gradient(135deg, hsl(0, 20%, 14%) 0%, hsl(0, 18%, 11%) 100%);
+}
+
+.player-card.winner {
+  border-color: hsl(45, 95%, 55%, 0.7);
+  background: linear-gradient(135deg, hsl(45, 40%, 14%) 0%, hsl(45, 30%, 11%) 100%);
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.15);
+}
+
+.category-badge {
+  background: linear-gradient(135deg, hsl(260, 60%, 20%) 0%, hsl(260, 60%, 15%) 100%);
+  border: 1px solid hsl(260, 60%, 35%);
+  color: hsl(260, 80%, 80%);
+}
+
+.score-badge {
+  background: linear-gradient(135deg, hsl(45, 95%, 20%) 0%, hsl(45, 95%, 15%) 100%);
+  border: 1px solid hsl(45, 95%, 40%);
+  color: hsl(45, 95%, 70%);
+}
+
+.glass-panel {
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.neon-text {
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5), 0 0 20px rgba(251, 191, 36, 0.2);
+}
+
+.input-field {
+  background: hsl(220, 20%, 8%);
+  border: 1px solid hsl(220, 15%, 25%);
+  color: hsl(210, 40%, 95%);
+  transition: all 0.2s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: hsl(45, 95%, 55%);
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.15);
+}
+
+.input-field.locked {
+  background: hsl(220, 15%, 12%);
+  border-color: hsl(0, 75%, 35%);
+  color: hsl(0, 75%, 70%);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.countdown-number {
+  animation: count-down 1s ease-in-out;
+}
+
+.progress-bar {
+  background: linear-gradient(90deg, hsl(45, 95%, 55%) 0%, hsl(35, 95%, 55%) 100%);
+  transition: width 1s linear;
+}
+
+.confetti-particle {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  animation: confetti-fall 3s ease-in forwards;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+.star-burst {
+  position: absolute;
+  font-size: 2rem;
+  animation: float 2s ease-in-out infinite;
+}
+
+.leaderboard-item {
+  background: linear-gradient(135deg, hsl(220, 18%, 16%) 0%, hsl(220, 18%, 13%) 100%);
+  border: 1px solid hsl(220, 15%, 25%);
+}
+
+.leaderboard-item.first {
+  border-color: hsl(45, 95%, 55%);
+  background: linear-gradient(135deg, hsl(45, 40%, 15%) 0%, hsl(220, 18%, 13%) 100%);
+}
+
+.leaderboard-item.second {
+  border-color: hsl(210, 20%, 55%);
+  background: linear-gradient(135deg, hsl(210, 20%, 14%) 0%, hsl(220, 18%, 13%) 100%);
+}
+
+.leaderboard-item.third {
+  border-color: hsl(25, 80%, 50%);
+  background: linear-gradient(135deg, hsl(25, 40%, 14%) 0%, hsl(220, 18%, 13%) 100%);
+}
+
+.bus-icon-pulse {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(220, 20%, 10%);
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(220, 15%, 30%);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(45, 95%, 40%);
+}
