@@ -13,6 +13,7 @@ interface AppState {
   room: RoomState | null;
   showScores: boolean;
   lastRoundScores: Record<string, number>;
+  lastValidityMap: Record<string, Record<string, boolean>>;
   answersSnapshot: Record<string, Record<string, string>>;
   localAnswers: Record<string, string>;
   isConnecting: boolean;
@@ -24,6 +25,7 @@ const defaultState: AppState = {
   room: null,
   showScores: false,
   lastRoundScores: {},
+  lastValidityMap: {},
   answersSnapshot: {},
   localAnswers: {},
   isConnecting: false,
@@ -51,6 +53,7 @@ export default function App() {
         room,
         showScores: false,
         lastRoundScores: {},
+        lastValidityMap: {},
         answersSnapshot: {},
         localAnswers: {},
       }));
@@ -59,13 +62,15 @@ export default function App() {
     socket.on('game_locked', (data: RoomState & {
       roundScores: Record<string, number>;
       answersSnapshot: Record<string, Record<string, string>>;
+      validityMap: Record<string, Record<string, boolean>>;
     }) => {
-      const { roundScores, answersSnapshot, ...room } = data;
+      const { roundScores, answersSnapshot, validityMap, ...room } = data;
       setState(prev => ({
         ...prev,
         room: room as RoomState,
         showScores: true,
         lastRoundScores: roundScores,
+        lastValidityMap: validityMap || {},
         answersSnapshot,
       }));
     });
@@ -76,6 +81,7 @@ export default function App() {
         room,
         showScores: false,
         lastRoundScores: {},
+        lastValidityMap: {},
         answersSnapshot: {},
         localAnswers: {},
       }));
@@ -95,6 +101,7 @@ export default function App() {
         room,
         showScores: false,
         lastRoundScores: {},
+        lastValidityMap: {},
         answersSnapshot: {},
         localAnswers: {},
       }));
@@ -134,6 +141,7 @@ export default function App() {
         room: res.room!,
         localAnswers: {},
         lastRoundScores: {},
+        lastValidityMap: {},
         answersSnapshot: {},
         showScores: false,
       }));
@@ -159,6 +167,7 @@ export default function App() {
         room: res.room!,
         localAnswers: {},
         lastRoundScores: {},
+        lastValidityMap: {},
         answersSnapshot: {},
         showScores: false,
       }));
@@ -206,7 +215,7 @@ export default function App() {
     getSocket().emit('reset_game', { code }, () => {});
   }, []);
 
-  const { room, myPlayerId, showScores, lastRoundScores, answersSnapshot, localAnswers, isConnecting } = state;
+  const { room, myPlayerId, showScores, lastRoundScores, lastValidityMap, answersSnapshot, localAnswers, isConnecting } = state;
 
   if (!room || !myPlayerId) {
     return (
@@ -243,6 +252,7 @@ export default function App() {
         room={room}
         myPlayerId={myPlayerId}
         lastRoundScores={lastRoundScores}
+        validityMap={lastValidityMap}
         answersSnapshot={answersSnapshot}
         onNextRound={handleNextRound}
         isHost={isHost}

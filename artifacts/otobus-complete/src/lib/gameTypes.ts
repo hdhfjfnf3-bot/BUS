@@ -31,6 +31,7 @@ export interface RoundResult {
   roundNumber: number;
   scores: Record<string, number>;
   answers: Record<string, Record<string, string>>;
+  validityMap?: Record<string, Record<string, boolean>>;
 }
 
 export interface RoomState {
@@ -45,6 +46,8 @@ export interface RoomState {
   roundResults: RoundResult[];
   timeLimit: number;
   roundScores?: Record<string, number>;
+  answersSnapshot?: Record<string, Record<string, string>>;
+  validityMap?: Record<string, Record<string, boolean>>;
 }
 
 export interface LocalState {
@@ -53,5 +56,21 @@ export interface LocalState {
   room: RoomState | null;
   showScores: boolean;
   lastRoundScores: Record<string, number>;
+  lastValidityMap: Record<string, Record<string, boolean>>;
+  lastAnswersSnapshot: Record<string, Record<string, string>>;
   localAnswers: Record<string, string>;
 }
+
+// Player avatar colors (for consistent color per player)
+export const PLAYER_COLORS = [
+  '#f59e0b', // gold
+  '#8b5cf6', // purple
+  '#06b6d4', // cyan
+  '#10b981', // emerald
+  '#ef4444', // red
+  '#f97316', // orange
+  '#ec4899', // pink
+  '#3b82f6', // blue
+  '#84cc16', // lime
+  '#6366f1', // indigo
+];

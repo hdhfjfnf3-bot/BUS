@@ -1,4 +1,4 @@
-import { Room, Player, generateRoomCode, getRandomLetter, calculateRoundScores } from './gameLogic.js';
+import { Room, Player, generateRoomCode, getRandomLetter, clearLetterCache, calculateRoundScores } from './gameLogic.js';
 
 const rooms = new Map<string, Room>();
 
@@ -50,15 +50,15 @@ export function joinRoom(
   const room = rooms.get(code.toUpperCase());
   if (!room) return { error: 'الغرفة دي مش موجودة' };
   if (room.phase !== 'lobby') return { error: 'اللعبة ابتدت خلاص' };
-  if (room.players.length >= 10) return { error: 'الغرفة ممتلية' };
-  if (room.players.some(p => p.name.toLowerCase() === playerName.toLowerCase())) {
+  if (room.players.length >= 10) return { error: 'الغرفة ممتلية (10 لاعبين)' };
+  if (room.players.some(p => p.name.trim().toLowerCase() === playerName.trim().toLowerCase())) {
     return { error: 'في حد تاني باسمك في الغرفة دي' };
   }
 
   const player: Player = {
     id: `p_${socketId.slice(0, 8)}`,
     socketId,
-    name: playerName,
+    name: playerName.trim(),
     totalScore: 0,
     roundScores: [],
     isHost: false,
@@ -94,6 +94,7 @@ export function removePlayerFromRoom(socketId: string): { room: Room; wasHost: b
   room.players.splice(playerIndex, 1);
 
   if (room.players.length === 0) {
+    clearLetterCache(room.code);
     rooms.delete(room.code);
     return null;
   }
@@ -111,7 +112,7 @@ export function startGame(code: string): Room | null {
 
   room.phase = 'playing';
   room.currentRound = 1;
-  room.currentLetter = getRandomLetter();
+  room.currentLetter = getRandomLetter(code);
   room.players.forEach(p => { p.answers = {}; });
   return room;
 }
@@ -144,11 +145,16 @@ export function updateAnswer(
   return true;
 }
 
-export function advanceRound(code: string): { room: Room; scores: Record<string, number>; isFinal: boolean } | null {
+export function advanceRound(code: string): {
+  room: Room;
+  scores: Record<string, number>;
+  validityMap: Record<string, Record<string, boolean>>;
+  isFinal: boolean;
+} | null {
   const room = rooms.get(code);
   if (!room || room.phase !== 'locked') return null;
 
-  const scores = calculateRoundScores(room.players, room.categories, room.currentLetter);
+  const { scores, validityMap } = calculateRoundScores(room.players, room.categories, room.currentLetter);
 
   const answersSnapshot: Record<string, Record<string, string>> = {};
   room.players.forEach(p => {
@@ -160,6 +166,7 @@ export function advanceRound(code: string): { room: Room; scores: Record<string,
     roundNumber: room.currentRound,
     scores,
     answers: answersSnapshot,
+    validityMap,
   });
 
   room.players.forEach(p => {
@@ -171,21 +178,23 @@ export function advanceRound(code: string): { room: Room; scores: Record<string,
 
   if (isFinal) {
     room.phase = 'final';
+    clearLetterCache(room.code);
   } else {
     room.currentRound += 1;
-    room.currentLetter = getRandomLetter();
+    room.currentLetter = getRandomLetter(code);
     room.phase = 'playing';
     room.lockedBy = null;
     room.players.forEach(p => { p.answers = {}; });
   }
 
-  return { room, scores, isFinal };
+  return { room, scores, validityMap, isFinal };
 }
 
 export function resetRoom(code: string): Room | null {
   const room = rooms.get(code);
   if (!room) return null;
 
+  clearLetterCache(code);
   room.phase = 'lobby';
   room.currentRound = 0;
   room.currentLetter = '';

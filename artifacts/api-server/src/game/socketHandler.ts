@@ -3,16 +3,8 @@ import type { Server as HttpServer } from 'http';
 import { logger } from '../lib/logger.js';
 import { calculateRoundScores } from './gameLogic.js';
 import {
-  createRoom,
-  joinRoom,
-  getRoom,
-  getRoomBySocketId,
-  removePlayerFromRoom,
-  startGame,
-  lockRoom,
-  updateAnswer,
-  advanceRound,
-  resetRoom,
+  createRoom, joinRoom, getRoom, getRoomBySocketId, removePlayerFromRoom,
+  startGame, lockRoom, updateAnswer, advanceRound, resetRoom,
 } from './roomManager.js';
 
 function getRoomState(code: string) {
@@ -22,12 +14,8 @@ function getRoomState(code: string) {
     code: room.code,
     phase: room.phase,
     players: room.players.map(p => ({
-      id: p.id,
-      name: p.name,
-      totalScore: p.totalScore,
-      roundScores: p.roundScores,
-      isHost: p.isHost,
-      answers: p.answers,
+      id: p.id, name: p.name, totalScore: p.totalScore,
+      roundScores: p.roundScores, isHost: p.isHost, answers: p.answers,
     })),
     categories: room.categories,
     totalRounds: room.totalRounds,
@@ -50,10 +38,7 @@ export function setupSocketIO(httpServer: HttpServer): SocketIOServer {
     logger.info({ socketId: socket.id }, 'Client connected');
 
     socket.on('create_room', (data: {
-      playerName: string;
-      categories: string[];
-      totalRounds: number;
-      timeLimit: number;
+      playerName: string; categories: string[]; totalRounds: number; timeLimit: number;
     }, callback) => {
       try {
         const { room, player } = createRoom(socket.id, data.playerName, data.categories, data.totalRounds, data.timeLimit);
@@ -100,18 +85,19 @@ export function setupSocketIO(httpServer: HttpServer): SocketIOServer {
       try {
         const updatedRoom = lockRoom(data.code, socket.id);
         if (!updatedRoom) { callback?.({ success: false }); return; }
-        
-        // Calculate scores immediately and broadcast
+
         const room = getRoom(data.code);
         if (!room) return;
-        const scores = calculateRoundScores(room.players, room.categories, room.currentLetter);
-        
-        // Collect answers snapshot
+
+        // Calculate scores & validity immediately
+        const { scores, validityMap } = calculateRoundScores(room.players, room.categories, room.currentLetter);
+
+        // Capture answers snapshot
         const answersSnapshot: Record<string, Record<string, string>> = {};
         room.players.forEach(p => { answersSnapshot[p.id] = { ...p.answers }; });
 
         const state = getRoomState(data.code);
-        io.to(data.code).emit('game_locked', { ...state, roundScores: scores, answersSnapshot });
+        io.to(data.code).emit('game_locked', { ...state, roundScores: scores, answersSnapshot, validityMap });
         callback?.({ success: true });
       } catch (err) {
         logger.error({ err }, 'Error locking room');
